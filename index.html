@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Configuratore Presse ad Iniezione</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            line-height: 1.6;
+        }
+        .config-section {
+            margin-bottom: 20px;
+        }
+        .result {
+            font-weight: bold;
+            margin-top: 20px;
+        }
+        .image-preview {
+            margin-top: 20px;
+        }
+        img {
+            max-width: 300px;
+            height: auto;
+            display: block;
+            margin-top: 10px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Configuratore Presse ad Iniezione</h1>
+
+    <!-- Tipologia della pressa -->
+    <div class="config-section">
+        <label for="tipologia">Tipologia di Pressa:</label>
+        <select id="tipologia" onchange="aggiornaImmagine()">
+            <option value="ibrida_sp" data-img="https://plasticmetal.it/images/multipower-sp.jpg" data-price="100000">Ibrida SP</option>
+            <option value="ibrida_h" data-img="https://plasticmetal.it/images/multipower-h.jpg" data-price="120000">Ibrida H</option>
+            <option value="ibrida_he" data-img="https://plasticmetal.it/images/multipower-he.jpg" data-price="140000">Ibrida HE</option>
+            <option value="elettryka" data-img="https://plasticmetal.it/images/elettryka.jpg" data-price="160000">Elettryka</option>
+            <option value="multipower" data-img="https://plasticmetal.it/images/multipower.jpg" data-price="180000">Multipower</option>
+        </select>
+    </div>
+
+    <!-- Forza di chiusura -->
+    <div class="config-section">
+        <label for="forza">Forza di Chiusura (tonnellate):</label>
+        <select id="forza" onchange="applicaRegoleForza()">
+            <option value="50" data-price="20000" data-limite-unita="50">50 ton</option>
+            <option value="500" data-price="40000" data-limite-unita="100">500 ton</option>
+            <option value="1000" data-price="60000" data-limite-unita="200">1000 ton</option>
+            <option value="2000" data-price="80000" data-limite-unita="500">2000 ton</option>
+            <option value="3200" data-price="100000" data-limite-unita="500">3200 ton</option>
+        </select>
+    </div>
+
+    <!-- Unità di iniezione -->
+    <div class="config-section">
+        <label for="unita">Unità di Iniezione:</label>
+        <select id="unita">
+            <option value="50" data-price="15000">Diametro vite 18 mm</option>
+            <option value="100" data-price="25000">Diametro vite 25 mm</option>
+            <option value="200" data-price="35000">Diametro vite 35 mm</option>
+            <option value="500" data-price="50000">Diametro vite 50 mm</option>
+        </select>
+    </div>
+
+    <!-- Optional -->
+    <div class="config-section">
+        <label>Optional:</label><br>
+        <input type="checkbox" id="robot" value="robot" data-price="20000">
+        <label for="robot">Robot integrato</label><br>
+        <input type="checkbox" id="raffreddamento" value="raffreddamento" data-price="15000">
+        <label for="raffreddamento">Sistema di raffreddamento avanzato</label><br>
+        <input type="checkbox" id="coiniezione" value="coiniezione" data-price="30000">
+        <label for="coiniezione">Tecnologia di Coiniezione</label>
+    </div>
+
+    <!-- Calcolo Prezzo -->
+    <button onclick="calcolaPrezzo()">Calcola Prezzo</button>
+
+    <div class="result" id="result"></div>
+
+    <!-- Anteprima immagine -->
+    <div class="image-preview">
+        <h3>Anteprima della Pressa:</h3>
+        <img id="preview" src="https://plasticmetal.it/images/multipower-sp.jpg" alt="Anteprima">
+    </div>
+
+    <script>
+        function aggiornaImmagine() {
+            const tipologia = document.getElementById('tipologia');
+            const imgSrc = tipologia.options[tipologia.selectedIndex].dataset.img;
+            document.getElementById('preview').src = imgSrc;
+        }
+
+        function applicaRegoleForza() {
+            const forza = document.getElementById('forza');
+            const limiteUnita = forza.options[forza.selectedIndex].dataset.limiteUnita;
+            const unita = document.getElementById('unita');
+
+            // Disabilita unità di iniezione che superano il limite
+            for (let i = 0; i < unita.options.length; i++) {
+                const opzione = unita.options[i];
+                if (parseInt(opzione.value) > parseInt(limiteUnita)) {
+                    opzione.disabled = true;
+                } else {
+                    opzione.disabled = false;
+                }
+            }
+        }
+
+        function calcolaPrezzo() {
+            let totalPrice = 0;
+
+            // Prezzo base dalla tipologia
+            const tipologia = document.getElementById('tipologia');
+            totalPrice += parseInt(tipologia.options[tipologia.selectedIndex].dataset.price);
+
+            // Prezzo forza di chiusura
+            const forza = document.getElementById('forza');
+            totalPrice += parseInt(forza.options[forza.selectedIndex].dataset.price);
+
+            // Prezzo unità di iniezione
+            const unita = document.getElementById('unita');
+            totalPrice += parseInt(unita.options[unita.selectedIndex].dataset.price);
+
+            // Optional
+            const optional = document.querySelectorAll('input[type="checkbox"]:checked');
+            optional.forEach(opt => {
+                totalPrice += parseInt(opt.dataset.price);
+            });
+
+            // Mostra il risultato
+            document.getElementById('result').innerText = `Prezzo Totale: €${totalPrice}`;
+        }
+
+        // Inizializza regole di forza al caricamento
+        document.addEventListener('DOMContentLoaded', applicaRegoleForza);
+    </script>
+</body>
+</html>
