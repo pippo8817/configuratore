@@ -2241,16 +2241,16 @@
     const distanze = colTonMap.map(obj => {
       const cArr = parseColonne(obj.colonne);
       if (!cArr) return { dist: 999999, col: obj.colonne };
-      const dx = Math.abs(cArr[0] - inputArr[0]);
-const dy = Math.abs(cArr[1] - inputArr[1]);
-		const dist = dx + dy;
+    const dx = cArr[0] - inputArr[0];
+    const dy = cArr[1] - inputArr[1];
       return {
+dist: Math.sqrt(dx*dx + dy*dy),      	
         
         col: obj.colonne
       };
     });
     distanze.sort((a,b) => a.dist - b.dist);
-    return distanze.slice(0,2).map(d => d.col);
+    return distanze.slice(0,4).map(d => d.col);
   }
 
   function mostraIntervalliViciniColonne(colVal) {
