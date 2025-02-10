@@ -49,6 +49,11 @@
               onchange="onColonneWHChange()"
             />
           </div>
+
+          <!-- Piccolo span per la scritta (DUO) -->
+          <div class="col-auto d-flex align-items-center">
+            <span id="duoLabel" class="text-primary"></span>
+          </div>
         </div>
         <!-- Campo nascosto/readonly per "HxV" -->
         <input
@@ -652,11 +657,33 @@
   ];
 
   /***************************************************************
-   * B) Dati di prova: dettagliEntries
+   * B) Array delle misure DUO
+   ***************************************************************/
+  const duoColumns = [
+    "1100x950",
+    "1300x1100",
+    "1500x1300",
+    "1700x1500",
+    "1900x1700"
+  ];
+
+  /***************************************************************
+   * C) Funzione helper per scrivere “(DUO)” accanto alle misure DUO
+   ***************************************************************/
+  function formatColonne(colStr) {
+    if (duoColumns.includes(colStr)) {
+      return colStr + " (DUO)";
+    } else {
+      return colStr;
+    }
+  }
+
+  /***************************************************************
+   * D) Dati di prova: dettagliEntries
    * (Inserisci i tuoi dati veri. Qui ci sono solo esempi.)
    ***************************************************************/
   const dettagliEntries = [
-        /* **** 370x300 **** */
+            /* **** 370x300 **** */
 // ibrida esp 50
 {
   colonne: "370x300", ton: 50, grammi: "20", unita: 50, modello: "ibrida esp 50"
@@ -1879,10 +1906,9 @@
 
 ];
 
-  /******************************************************
-   * D) DIAMETRO & L/D
-   ******************************************************/
-  // 1) Mapping: grammi -> diametro
+  /***************************************************************
+   * E) Mappatura Grammi -> Diametro e viceversa
+   ***************************************************************/
   const diametroViteMapping = {
     "20": "18",
     "26": "20",
@@ -1967,7 +1993,6 @@
     "34970": "220",
     "39400": "235"
   };
-  // 2) Mapping inverso: diametro -> array di possibili grammi
   const diametroToGrammiMapping = {
     "18": ["20"],
     "20": ["26"],
@@ -2004,7 +2029,7 @@
   };
 
   /***************************************************************
-   * D) diamUnitaLdMapping: mappa unita_diam => testo L/D
+   * F) Mappa unita_diam => testo L/D
    ***************************************************************/
   const diamUnitaLdMapping = {
     "50_18": "Ø 18 mm - L/D 23",
@@ -2103,7 +2128,7 @@
   };
 
   /***************************************************************
-   * E) onColonneWHChange
+   * G) onColonneWHChange
    ***************************************************************/
   function onColonneWHChange() {
     const hVal = parseInt(document.getElementById("colonneHInput").value, 10);
@@ -2112,6 +2137,7 @@
     if (isNaN(hVal) || isNaN(vVal)) {
       document.getElementById("colonneInput").value = "";
       nascondiIntervalliViciniColonne();
+      document.getElementById("duoLabel").textContent = ""; // pulisci DUO
       return;
     }
 
@@ -2121,36 +2147,43 @@
   }
 
   /***************************************************************
-   * F) onColonneChange
+   * H) onColonneChange
    ***************************************************************/
   function onColonneChange() {
     const col = document.getElementById("colonneInput").value.trim();
     nascondiTonnellaggiVicini();
     nascondiIntervalliViciniColonne();
 
-    // Reset select multiplo ton
+    // Pulizia ton multiple
     const tonSel = document.getElementById("tonSceltaMultiple");
     tonSel.classList.add("d-none");
     tonSel.innerHTML = "<option value=''>Scegli un tonnellaggio</option>";
 
+    // Se "col" è DUO, mostra la scritta (DUO)
+    if (duoColumns.includes(col)) {
+      document.getElementById("duoLabel").textContent = "(DUO)";
+    } else {
+      document.getElementById("duoLabel").textContent = "";
+    }
+
     // Cerchiamo corrispondenza in colTonMap
     const match = colTonMap.find(ct => ct.colonne === col);
     if (!match) {
-      // Se non c’è corrispondenza, mostriamo i “vicini”
+      // Non c’è corrispondenza => mostriamo i “vicini”
       if (col) mostraIntervalliViciniColonne(col);
       document.getElementById("tonInput").value = "";
-      // E nascondiamo l’immagine di chiusura
+      // Nascondi immagine chiusura
       document.getElementById("imgChiusura").classList.add("d-none");
       document.getElementById("imgChiusura").src = "";
       return;
     }
 
-    // Se match.tonList ha 1 sola voce => scriviamo diretta
+    // Se match.tonList ha 1 sola voce
     if (match.tonList.length === 1) {
       document.getElementById("tonInput").value = match.tonList[0];
       mostraImgTon(match.tonList[0]);
     } else {
-      // multiple scelte ton
+      // multiple scelte
       match.tonList.forEach(t => {
         const opt = document.createElement("option");
         opt.value = t;
@@ -2163,7 +2196,7 @@
       document.getElementById("imgTon").src = "";
     }
 
-    // Se c’è corrispondenza colonne => mostriamo immagine chiusura
+    // Mostriamo immagine chiusura se c’è corrispondenza
     mostraImgChiusura(col);
 
     const tonVal = parseInt(document.getElementById("tonInput").value, 10);
@@ -2173,7 +2206,7 @@
   }
 
   /***************************************************************
-   * G) onTonChange
+   * I) onTonChange
    ***************************************************************/
   function onTonChange() {
     const val = parseInt(document.getElementById("tonInput").value, 10);
@@ -2225,7 +2258,7 @@
   }
 
   /***************************************************************
-   * H) Funzioni “vicini” per passaggio colonne e ton
+   * J) Funzioni “vicini” per passaggio colonne e ton
    ***************************************************************/
   function parseColonne(str) {
     const parts = str.split('x').map(s => parseInt(s.trim(),10));
@@ -2235,21 +2268,22 @@
     return null;
   }
 
+  // Uso la distanza MANHATTAN: dist = |x1-x2| + |y1-y2|
   function trovaIntervalliViciniColonne(colStr) {
     const inputArr = parseColonne(colStr);
     if (!inputArr) return [];
     const distanze = colTonMap.map(obj => {
       const cArr = parseColonne(obj.colonne);
       if (!cArr) return { dist: 999999, col: obj.colonne };
-    const dx = cArr[0] - inputArr[0];
-    const dy = cArr[1] - inputArr[1];
+      const dx = Math.abs(cArr[0] - inputArr[0]);
+      const dy = Math.abs(cArr[1] - inputArr[1]);
       return {
-dist: Math.sqrt(dx*dx + dy*dy),      	
-        
+        dist: dx + dy,  // Manhattan
         col: obj.colonne
       };
     });
     distanze.sort((a,b) => a.dist - b.dist);
+    // Prendo i primi 2
     return distanze.slice(0,4).map(d => d.col);
   }
 
@@ -2257,6 +2291,7 @@ dist: Math.sqrt(dx*dx + dy*dy),
     const divV = document.getElementById("divColonneVicini");
     const selV = document.getElementById("colonneViciniSelect");
     selV.innerHTML = "<option value=''>Scegli un passaggio simile</option>";
+
     const vicini = trovaIntervalliViciniColonne(colVal);
     if (!vicini.length) {
       divV.classList.add("d-none");
@@ -2265,7 +2300,7 @@ dist: Math.sqrt(dx*dx + dy*dy),
     vicini.forEach(v => {
       const opt = document.createElement("option");
       opt.value = v;
-      opt.textContent = v;
+      opt.textContent = formatColonne(v); // "1100x950 (DUO)" se DUO
       selV.appendChild(opt);
     });
     divV.classList.remove("d-none");
@@ -2331,7 +2366,7 @@ dist: Math.sqrt(dx*dx + dy*dy),
   }
 
   /***************************************************************
-   * I) Popola Grammi e Diametro
+   * K) Popola Grammi e Diametro
    ***************************************************************/
   function popolaGrammiEDiametroVite() {
     const col = document.getElementById("colonneInput").value.trim();
@@ -2383,7 +2418,7 @@ dist: Math.sqrt(dx*dx + dy*dy),
   }
 
   /***************************************************************
-   * J) Se cambia grammi => diam
+   * L) Se cambia grammi => diam
    ***************************************************************/
   function aggiornaDiametroVite() {
     const gramVal = document.getElementById("grammiSelect").value;
@@ -2417,7 +2452,7 @@ dist: Math.sqrt(dx*dx + dy*dy),
   }
 
   /***************************************************************
-   * K) Mostra testo L/D
+   * M) Mostra testo L/D
    ***************************************************************/
   function aggiornaLDText() {
     const unitaVal = document.getElementById("unitaSelect").value; // string
@@ -2438,7 +2473,7 @@ dist: Math.sqrt(dx*dx + dy*dy),
   }
 
   /***************************************************************
-   * L) popolaUnita e popolaModello
+   * N) popolaUnita e popolaModello
    ***************************************************************/
   function popolaUnita() {
     const col     = document.getElementById("colonneInput").value.trim();
@@ -2502,7 +2537,7 @@ dist: Math.sqrt(dx*dx + dy*dy),
   }
 
   /***************************************************************
-   * M) Funzioni per mostrare immagini: Chiudura / Ton / Vite / Iniezione
+   * O) Funzioni per mostrare immagini: Chiusura / Ton / Vite / Iniezione
    ***************************************************************/
   function mostraImgChiusura(col) {
     const img = document.getElementById("imgChiusura");
@@ -2518,7 +2553,6 @@ dist: Math.sqrt(dx*dx + dy*dy),
       col === "1500x1300"||
       col === "1700x1500"||
       col === "1900x1700"
-      // Aggiungi qui altre misure DUO se vuoi
     ) {
       img.src = "img/trenostampiduo.jpg";
     } else {
@@ -2563,15 +2597,18 @@ dist: Math.sqrt(dx*dx + dy*dy),
   }
 
   /***************************************************************
-   * N) Configura Pressa => Riepilogo + Immagine Finale
+   * P) Configura Pressa => Riepilogo + Immagine Finale
    ***************************************************************/
   function configuraPressa() {
-    const col = document.getElementById("colonneInput").value.trim();
-    const tonVal = document.getElementById("tonInput").value;
-    const grammi = document.getElementById("grammiSelect").value;
-    const unita = document.getElementById("unitaSelect").value;
-    const modello = document.getElementById("modelloSelect").value;
-    if (!col || !tonVal || !grammi || !unita || !modello) {
+    const col     = document.getElementById("colonneInput").value.trim();
+    const tonVal  = document.getElementById("tonInput").value.trim();
+    const grammi  = document.getElementById("grammiSelect").value.trim();
+    const diamVal = document.getElementById("diametroViteSelect").value.trim(); // NUOVO
+    const unita   = document.getElementById("unitaSelect").value.trim();
+    const modello = document.getElementById("modelloSelect").value.trim();
+
+    if (!col || !tonVal || !grammi || !diamVal || !unita || !modello) {
+      // Volendo, qui potresti mostrare un alert
       return;
     }
 
@@ -2581,8 +2618,9 @@ dist: Math.sqrt(dx*dx + dy*dy),
       <p><strong>Passaggio colonne:</strong> ${col}</p>
       <p><strong>Tonnellaggio:</strong> ${tonVal}</p>
       <p><strong>Grammatura:</strong> ${grammi}</p>
+      <p><strong>Diametro vite:</strong> ${diamVal}</p> <!-- Mostro diametro vite -->
       <p><strong>Unità di iniezione:</strong> ${unita}</p>
-      <p><strong>Modello:</strong> ${modello}</p>
+      <p><strong>Modello:</strong> <strong>${modello}</strong></p>
     `;
     mostraImmagineFinale(modello);
 
@@ -2603,6 +2641,9 @@ dist: Math.sqrt(dx*dx + dy*dy),
     else if (low.includes("h-he")) {
       img.src = "img/HE.JPG";
     }
+    else if (low.includes("duo")) {
+      img.src = "img/duo.jpg";
+    }
     else if (low.includes("ibrida")) {
       img.src = "img/ibrida.JPG";
     }
@@ -2615,7 +2656,7 @@ dist: Math.sqrt(dx*dx + dy*dy),
   }
 
   /***************************************************************
-   * O) Azzera Filtri
+   * Q) Azzera Filtri
    ***************************************************************/
   function azzeraFiltri() {
     document.getElementById("colonneHInput").value = "";
@@ -2625,6 +2666,7 @@ dist: Math.sqrt(dx*dx + dy*dy),
 
     nascondiIntervalliViciniColonne();
     nascondiTonnellaggiVicini();
+    document.getElementById("duoLabel").textContent = "";
 
     const ts = document.getElementById("tonSceltaMultiple");
     ts.classList.add("d-none");
@@ -2675,7 +2717,7 @@ dist: Math.sqrt(dx*dx + dy*dy),
   }
 
   /***************************************************************
-   * P) Accessori: toggle e reset
+   * R) Accessori: toggle e reset
    ***************************************************************/
   function toggleQuantityInput(checkbox, containerId) {
     const ctn = document.getElementById(containerId);
@@ -2724,8 +2766,8 @@ dist: Math.sqrt(dx*dx + dy*dy),
         }
         else if (ch.id === "accMartinettiPne") {
           const f = document.getElementById("martPneFissoQty").value;
-          const m = document.getElementById("martPneMobileQty").value;
-          selez.push(`Martinetti pneumatici (fisso x${f}, mobile x${m})`);
+          const mm = document.getElementById("martPneMobileQty").value;
+          selez.push(`Martinetti pneumatici (fisso x${f}, mobile x${mm})`);
         }
         else if (ch.id === "accPresa230") {
           const q = document.getElementById("presa230Qty").value;
@@ -2737,8 +2779,8 @@ dist: Math.sqrt(dx*dx + dy*dy),
         }
         else if (ch.id === "accAriaTemp") {
           const f = document.getElementById("ariaTempFisso").value;
-          const m = document.getElementById("ariaTempMobile").value;
-          selez.push(`Aria compressa tempor. (fisso x${f}, mobile x${m})`);
+          const mm = document.getElementById("ariaTempMobile").value;
+          selez.push(`Aria compressa tempor. (fisso x${f}, mobile x${mm})`);
         }
         else if (ch.id === "accCentRisc") {
           const z = document.getElementById("centRiscQty").value;
@@ -2767,7 +2809,7 @@ dist: Math.sqrt(dx*dx + dy*dy),
   }
 
   /***************************************************************
-   * Q) setColonneHV (helper se serve)
+   * S) setColonneHV (helper se serve)
    ***************************************************************/
   function setColonneHV(colStr) {
     const parts = colStr.split("x");
@@ -2778,10 +2820,17 @@ dist: Math.sqrt(dx*dx + dy*dy),
     document.getElementById("colonneHInput").value = h;
     document.getElementById("colonneVInput").value = v;
     document.getElementById("colonneInput").value = colStr;
+
+    // Mostra “(DUO)” se lo è
+    if (duoColumns.includes(colStr)) {
+      document.getElementById("duoLabel").textContent = "(DUO)";
+    } else {
+      document.getElementById("duoLabel").textContent = "";
+    }
   }
 
   /***************************************************************
-   * R) Event Listener al DOMContentLoaded
+   * T) Event Listener al DOMContentLoaded
    ***************************************************************/
   document.addEventListener("DOMContentLoaded", function() {
     // Se cambia la select grammi => diam
